@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget offlineCapable="true" id="OpenOfflineFile.widget.OpenOfflineFile" needsEntityContext="true" xmlns="http://www.mendix.com/widget/1.0/">
+    <name>Open Offline File</name>
+    <description>Open synchronized offline file in external app.</description>
+
+    <icon>
+    </icon>
+
+    <properties>
+		<property key="mimeTypeAttribute" type="attribute" required="true">
+            <caption>Mime Type Attribute</caption>
+            <category>Behaviour</category>
+            <description>App selection is based on the mime type</description>
+            <attributeTypes>
+                <attributeType name="String" />
+                <attributeType name="Enum" />
+            </attributeTypes>
+        </property>
+        <property key="onErrorNanoflow" type="nanoflow" required="false" defaultValue="">
+            <caption>OnError Nanoflow</caption>
+            <category>Behaviour</category>
+            <description>Nanoflow executed if file cannot be opened.</description>
+            <returnType type="Void" />
+        </property>
+    </properties>
+</widget>
