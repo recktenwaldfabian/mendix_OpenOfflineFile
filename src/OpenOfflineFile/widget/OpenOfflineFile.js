@@ -58,28 +58,15 @@ define([
             }
         },
 
-        // Attach events to HTML dom elements
-        _setupEvents: function () {
-            logger.debug(this.id + "._setupEventsContext");
+        _openFileUrl: function (fileUrl, mimeType) {
+            logger.debug(this.id + ".openFile: " + fileUrl);
 
-            dojoClass.add(this.domNode.parentNode, "OpenOfflineFile");
+            window.resolveLocalFileSystemURL(
+                fileUrl,
+                dojoLang.hitch(this, function (entry) {
+                    logger.debug(this.id + ".resolvedFile: " + entry.toURL());
 
-            this.connect(this.domNode.parentNode, "click", dojoLang.hitch(this, function (e) {
-                // Only on mobile stop event bubbling!
-                this._stopBubblingEventOnMobile(e);
-
-                if (this._contextObj) {
-                    var fileUrl = cordova.file.externalDataDirectory + "files/documents/" + this._contextObj.getGuid();
-                    var mimeType = this._contextObj.get(this.mimeTypeAttribute);
-
-                    // Example mime types
-                    // docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    // pdf = 'application/pdf'
-
-                    logger.debug(this.id + ".openFile: " + fileUrl);
-                    //cordova.InAppBrowser.open(fileUrl, '_system', 'location=yes');
-                    //cordova.InAppBrowser.open(fileUrl, '_blank', 'location=yes');
-                    cordova.plugins.fileOpener2.open(fileUrl, mimeType, {
+                    cordova.plugins.fileOpener2.open(entry.toInternalURL(), mimeType, {
                         error: dojoLang.hitch(this, function (e) {
                             if (this.onErrorNanoflow.nanoflow && this.mxcontext) {
                                 mx.data.callNanoflow({
@@ -91,14 +78,52 @@ define([
                                         logger.warn(this.id + '.' + error.message);
                                     }
                                 });
-                            } else {
-                                logger.warn(this.id + '.Error status: ' + e.status + ' - Error message: ' + e.message);
                             }
+                            logger.warn(this.id + '.Error status: ' + e.status + ' - Error message: ' + e.message + ' URL:' + fileUrl);
                         }),
                         success: function () {
                             logger.debug(this.id + '.file opened successfully');
                         }
                     });
+
+                }),
+                function (err) {
+                    logger.error(err);
+                }
+            );
+
+        },
+
+        // Attach events to HTML dom elements
+        _setupEvents: function () {
+            logger.debug(this.id + "._setupEventsContext");
+
+            dojoClass.add(this.domNode.parentNode, "OpenOfflineFile");
+
+            this.connect(this.domNode.parentNode, "click", dojoLang.hitch(this, function (e) {
+                // Only on mobile stop event bubbling!
+                this._stopBubblingEventOnMobile(e);
+
+                if (this._contextObj) {
+                    var mimeType = this._contextObj.get(this.mimeTypeAttribute);
+                    // Example mime types
+                    // docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    // pdf = 'application/pdf'
+                    
+                    var fileAddress = this._contextObj.getGuid();
+                    var mxVersion = mx.version.split('.').map(function(v,i) { return parseInt(v); });
+                    if ( mxVersion[0]>=7 && mxVersion[1]>=23) 
+                        fileAddress += '@' + this._contextObj.get('changedDate');
+                    //fileAddress += '?' + (new Date()).getTime();
+
+                    if (device.platform == 'Android') {
+                        this._openFileUrl(cordova.file.externalDataDirectory + "files/documents/" + fileAddress, mimeType);
+                    } else if (device.platform == 'iOS') {
+                        //this._openFileUrl(cordova.file.documentsDirectory + "NoCloud/www/storage/files/documents/" + this._contextObj.getGuid(), mimeType);
+                        this._openFileUrl(cordova.file.dataDirectory + "www/storage/files/documents/" + fileAddress, mimeType);
+                    } else {
+                        logger.error(this.id + ".unsupportedDevicePlatform:" + device.platform);
+                    }
                 }
                 // If a microflow has been set execute the microflow on a click.
             }));
